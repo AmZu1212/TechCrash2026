@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Loopback Challenge &mdash; CrashTech VLSI-2026</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0071c5;
+            --accent: #00c7b7;
+            --bg-dark: #0b1121;
+            --bg-section: #111827;
+            --bg-card: #1a2332;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-bright: #f1f5f9;
+            --border: #2d3a4a;
+            --radius: 12px;
+            --danger: #ef4444;
+            --warn: #f59e0b;
+            --safe: #22c55e;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .container { max-width: 960px; margin: 0 auto; }
+        .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.9rem; }
+        h1 { font-size: 2.4rem; color: var(--text-bright); margin-bottom: 0.5rem; }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 2rem; }
+        h2 { font-size: 1.5rem; color: var(--accent); margin: 2.5rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+        h3 { font-size: 1.1rem; color: var(--text-bright); margin: 1.5rem 0 0.5rem; }
+        p { margin-bottom: 1rem; }
+        ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+        li { margin-bottom: 0.3rem; }
+        code {
+            background: var(--bg-card);
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: var(--accent);
+        }
+        .badge {
+            display: inline-block;
+            font-weight: 700;
+            font-size: 0.75rem;
+            padding: 0.2em 0.7em;
+            border-radius: 20px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+        .badge-challenge { background: var(--warn); color: var(--bg-dark); }
+        .badge-points { background: var(--accent); color: var(--bg-dark); margin-left: 0.5rem; }
+
+        .callout {
+            border-left: 4px solid;
+            padding: 1rem 1.2rem;
+            margin: 1.5rem 0;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            font-size: 0.95rem;
+        }
+        .callout-danger { background: rgba(239,68,68,0.1); border-color: var(--danger); }
+        .callout-safe { background: rgba(34,197,94,0.1); border-color: var(--safe); }
+        .callout-warn { background: rgba(245,158,11,0.1); border-color: var(--warn); }
+        .callout strong { color: var(--text-bright); }
+
+        .diagram {
+            background: var(--bg-section);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+        .diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+
+        .legend {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .legend-swatch {
+            width: 20px;
+            height: 14px;
+            border-radius: 3px;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+        th, td {
+            padding: 0.6rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th { background: var(--bg-card); color: var(--accent); font-weight: 600; }
+        td { color: var(--text); }
+        td.mono { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.85rem; }
+
+        .code-block {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.2rem;
+            overflow-x: auto;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+            white-space: pre;
+        }
+
+        .file-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .file-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem;
+        }
+        .file-card h4 { color: var(--accent); font-size: 0.9rem; margin-bottom: 0.3rem; }
+        .file-card p { color: var(--text-muted); font-size: 0.85rem; margin: 0; }
+
+        .scoring-table td:first-child { font-weight: 600; color: var(--text-bright); }
+        .scoring-table tr.baseline td { color: var(--warn); }
+        .scoring-table tr.fast td { color: var(--safe); }
+        .scoring-table tr.fastest td { color: var(--accent); font-weight: 700; }
+
+        footer {
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <a href="../../index.html#challenges" class="back-link">&larr; Back to Main Site</a>
+
+    <span class="badge badge-challenge">Challenge</span>
+    <span class="badge badge-points">Best Time Wins</span>
+    <h1>Speed Loopback</h1>
+    <p class="subtitle">Transfer 10,000 bytes from the FPGA to the ESP32 and back. The fastest team wins.</p>
+
+    <!-- ===== THE CHALLENGE ===== -->
+    <h2>The Challenge</h2>
+    <p>
+        The FPGA generates <strong>10,000 pseudo-random bytes</strong> and sends them to the ESP32.
+        The ESP32 must receive all 10,000 bytes, compute the <strong>sum</strong> (keeping only the lowest 8 bits),
+        and send that single checksum byte back to the FPGA.
+    </p>
+    <p>
+        The FPGA independently computes the expected checksum. When it receives the ESP32's answer,
+        it stops the timer and compares. If the checksum matches: <strong>PASS</strong>.
+        The 7-segment displays show the elapsed time in milliseconds (hex).
+    </p>
+
+    <div class="callout callout-warn">
+        <strong>Scoring:</strong> Lowest elapsed time (in ms) with a correct checksum wins.
+        Incorrect checksums score zero. The baseline implementation runs at 9600 baud and takes
+        roughly <strong>10.4 seconds</strong>. Your job: obliterate that number.
+    </div>
+
+    <!-- ===== BLOCK DIAGRAM ===== -->
+    <h2>FPGA Architecture</h2>
+    <p>The FPGA contains fixed infrastructure (red) that you <strong>must not modify</strong>,
+       and a communication layer (green) that is <strong>yours to replace</strong>.</p>
+
+    <div class="diagram">
+        <svg viewBox="0 0 880 470" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif">
+            <!-- Background -->
+            <rect x="0" y="0" width="880" height="470" rx="12" fill="#111827"/>
+
+            <!-- FPGA boundary -->
+            <rect x="20" y="20" width="540" height="430" rx="10" fill="none" stroke="#2d3a4a" stroke-width="2" stroke-dasharray="8 4"/>
+            <text x="40" y="50" fill="#94a3b8" font-size="13" font-weight="600">DE10-Lite FPGA</text>
+
+            <!-- ============ FIXED BLOCKS (red/orange) ============ -->
+
+            <!-- LFSR Random Generator -->
+            <rect x="40" y="80" width="160" height="60" rx="8" fill="#7f1d1d" stroke="#ef4444" stroke-width="2"/>
+            <text x="120" y="106" fill="#fca5a5" font-size="13" font-weight="700" text-anchor="middle">LFSR Random</text>
+            <text x="120" y="124" fill="#fca5a5" font-size="11" text-anchor="middle">16-bit, seed 0xACE1</text>
+
+            <!-- Sum Accumulator -->
+            <rect x="40" y="170" width="160" height="60" rx="8" fill="#7f1d1d" stroke="#ef4444" stroke-width="2"/>
+            <text x="120" y="196" fill="#fca5a5" font-size="13" font-weight="700" text-anchor="middle">Sum Accumulator</text>
+            <text x="120" y="214" fill="#fca5a5" font-size="11" text-anchor="middle">32-bit running sum</text>
+
+            <!-- Timer -->
+            <rect x="40" y="260" width="160" height="60" rx="8" fill="#7f1d1d" stroke="#ef4444" stroke-width="2"/>
+            <text x="120" y="286" fill="#fca5a5" font-size="13" font-weight="700" text-anchor="middle">ms Timer</text>
+            <text x="120" y="304" fill="#fca5a5" font-size="11" text-anchor="middle">50 MHz / 50,000</text>
+
+            <!-- Comparator -->
+            <rect x="40" y="350" width="160" height="60" rx="8" fill="#7f1d1d" stroke="#ef4444" stroke-width="2"/>
+            <text x="120" y="376" fill="#fca5a5" font-size="13" font-weight="700" text-anchor="middle">Comparator</text>
+            <text x="120" y="394" fill="#fca5a5" font-size="11" text-anchor="middle">expected vs received</text>
+
+            <!-- State Machine -->
+            <rect x="220" y="80" width="130" height="60" rx="8" fill="#7f1d1d" stroke="#ef4444" stroke-width="2"/>
+            <text x="285" y="106" fill="#fca5a5" font-size="13" font-weight="700" text-anchor="middle">State Machine</text>
+            <text x="285" y="124" fill="#fca5a5" font-size="11" text-anchor="middle">IDLE/HDR/DATA/WAIT/DONE</text>
+
+            <!-- ============ MODIFIABLE BLOCKS (green) ============ -->
+
+            <!-- UART TX -->
+            <rect x="370" y="170" width="170" height="70" rx="8" fill="#14532d" stroke="#22c55e" stroke-width="2.5"/>
+            <text x="455" y="196" fill="#86efac" font-size="14" font-weight="700" text-anchor="middle">UART TX</text>
+            <text x="455" y="216" fill="#86efac" font-size="11" text-anchor="middle">9600 baud (baseline)</text>
+            <text x="455" y="232" fill="#4ade80" font-size="10" font-weight="600" text-anchor="middle">MODIFY THIS!</text>
+
+            <!-- UART RX -->
+            <rect x="370" y="310" width="170" height="70" rx="8" fill="#14532d" stroke="#22c55e" stroke-width="2.5"/>
+            <text x="455" y="336" fill="#86efac" font-size="14" font-weight="700" text-anchor="middle">UART RX</text>
+            <text x="455" y="356" fill="#86efac" font-size="11" text-anchor="middle">9600 baud (baseline)</text>
+            <text x="455" y="372" fill="#4ade80" font-size="10" font-weight="600" text-anchor="middle">MODIFY THIS!</text>
+
+            <!-- ============ ARROWS inside FPGA ============ -->
+
+            <!-- LFSR -> TX (random data) -->
+            <line x1="200" y1="110" x2="370" y2="195" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <text x="270" y="145" fill="#94a3b8" font-size="9" transform="rotate(-15,270,145)">8-bit data</text>
+
+            <!-- LFSR -> Sum -->
+            <line x1="120" y1="140" x2="120" y2="170" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+            <!-- RX -> Comparator -->
+            <line x1="370" y1="360" x2="200" y2="380" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <text x="280" y="363" fill="#94a3b8" font-size="9">checksum byte</text>
+
+            <!-- Sum -> Comparator -->
+            <line x1="120" y1="230" x2="120" y2="350" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <text x="125" y="295" fill="#94a3b8" font-size="9">expected[7:0]</text>
+
+            <!-- ============ ESP32 ============ -->
+            <rect x="620" y="130" width="240" height="280" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+            <text x="740" y="160" fill="#93c5fd" font-size="14" font-weight="700" text-anchor="middle">ESP32</text>
+
+            <!-- ESP32 internal -->
+            <rect x="645" y="180" width="190" height="50" rx="6" fill="#14532d" stroke="#22c55e" stroke-width="1.5"/>
+            <text x="740" y="202" fill="#86efac" font-size="12" font-weight="600" text-anchor="middle">UART RX (receive bytes)</text>
+            <text x="740" y="218" fill="#4ade80" font-size="10" font-weight="600" text-anchor="middle">MODIFY THIS!</text>
+
+            <rect x="645" y="250" width="190" height="40" rx="6" fill="#14532d" stroke="#22c55e" stroke-width="1.5"/>
+            <text x="740" y="275" fill="#86efac" font-size="12" font-weight="600" text-anchor="middle">Compute sum &amp; 0xFF</text>
+
+            <rect x="645" y="310" width="190" height="50" rx="6" fill="#14532d" stroke="#22c55e" stroke-width="1.5"/>
+            <text x="740" y="332" fill="#86efac" font-size="12" font-weight="600" text-anchor="middle">UART TX (send checksum)</text>
+            <text x="740" y="348" fill="#4ade80" font-size="10" font-weight="600" text-anchor="middle">MODIFY THIS!</text>
+
+            <!-- ============ WIRES between FPGA and ESP32 ============ -->
+
+            <!-- TX -> ESP32 -->
+            <line x1="540" y1="205" x2="620" y2="205" stroke="#22c55e" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+            <text x="573" y="198" fill="#22c55e" font-size="10" font-weight="600" text-anchor="middle">GPIO[1]</text>
+
+            <!-- ESP32 -> RX -->
+            <line x1="620" y1="345" x2="540" y2="345" stroke="#22c55e" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+            <text x="573" y="338" fill="#22c55e" font-size="10" font-weight="600" text-anchor="middle">GPIO[0]</text>
+
+            <!-- ============ OUTPUTS ============ -->
+
+            <!-- HEX display -->
+            <rect x="40" y="430" width="120" height="30" rx="6" fill="#1e293b" stroke="#64748b" stroke-width="1"/>
+            <text x="100" y="450" fill="#94a3b8" font-size="11" font-weight="600" text-anchor="middle">HEX5..0 (time)</text>
+
+            <!-- LEDs -->
+            <rect x="180" y="430" width="120" height="30" rx="6" fill="#1e293b" stroke="#64748b" stroke-width="1"/>
+            <text x="240" y="450" fill="#94a3b8" font-size="11" font-weight="600" text-anchor="middle">LED0=PASS LED1=FAIL</text>
+
+            <!-- KEY -->
+            <rect x="320" y="430" width="80" height="30" rx="6" fill="#1e293b" stroke="#64748b" stroke-width="1"/>
+            <text x="360" y="450" fill="#94a3b8" font-size="11" font-weight="600" text-anchor="middle">KEY[0] Start</text>
+
+            <!-- ============ ARROW MARKERS ============ -->
+            <defs>
+                <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6" fill="#94a3b8"/>
+                </marker>
+                <marker id="arrowGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6" fill="#22c55e"/>
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-swatch" style="background: #7f1d1d; border-color: #ef4444;"></div>
+            <span style="color: #fca5a5; font-weight: 600;">DO NOT MODIFY</span> &mdash; Fixed infrastructure
+        </div>
+        <div class="legend-item">
+            <div class="legend-swatch" style="background: #14532d; border-color: #22c55e;"></div>
+            <span style="color: #86efac; font-weight: 600;">YOUR CODE</span> &mdash; Communication layer (replace/upgrade)
+        </div>
+    </div>
+
+    <!-- ===== RULES ===== -->
+    <h2>Rules</h2>
+
+    <div class="callout callout-danger">
+        <strong>DO NOT MODIFY</strong> the fixed FPGA infrastructure:
+        LFSR random generator, sum accumulator, millisecond timer, comparator, state machine,
+        or the data count (10,000). Changing any of these disqualifies your run.
+    </div>
+
+    <div class="callout callout-safe">
+        <strong>YOU MAY MODIFY</strong> anything in the communication path:
+        <ul style="margin-top:0.5rem; margin-bottom:0;">
+            <li>Replace the UART TX/RX with faster UARTs, SPI, parallel bus, or anything else</li>
+            <li>Change baud rates</li>
+            <li>Add multiple communication channels in parallel</li>
+            <li>Rewrite the entire ESP32 firmware</li>
+            <li>Use any GPIO pins on the JP1 header</li>
+        </ul>
+    </div>
+
+    <h3>Protocol</h3>
+    <ol>
+        <li>FPGA sends a <strong>4-byte header</strong>: the count N as a 32-bit little-endian integer (always 10,000 = <code>0x00002710</code>)</li>
+        <li>FPGA sends <strong>N data bytes</strong>: pseudo-random values from a 16-bit LFSR</li>
+        <li>ESP32 computes <code>sum = (byte0 + byte1 + ... + byteN-1) &amp; 0xFF</code></li>
+        <li>ESP32 sends back <strong>1 byte</strong>: the checksum</li>
+        <li>FPGA stops the timer and compares</li>
+    </ol>
+
+    <!-- ===== BASELINE TIMING ===== -->
+    <h2>Baseline Performance</h2>
+    <p>The provided example uses a single 9600-baud UART for both directions.</p>
+
+    <table class="scoring-table">
+        <thead>
+            <tr><th>Approach</th><th>Estimated Time</th><th>Speedup</th></tr>
+        </thead>
+        <tbody>
+            <tr class="baseline"><td>Baseline (9600 baud)</td><td>~10,400 ms</td><td>1x</td></tr>
+            <tr><td>115,200 baud UART</td><td>~870 ms</td><td>12x</td></tr>
+            <tr><td>921,600 baud UART</td><td>~110 ms</td><td>95x</td></tr>
+            <tr class="fast"><td>2 Mbaud UART</td><td>~50 ms</td><td>200x</td></tr>
+            <tr class="fast"><td>Dual 2 Mbaud UARTs</td><td>~25 ms</td><td>416x</td></tr>
+            <tr class="fastest"><td>SPI (10 MHz)</td><td>~5 ms</td><td>2000x</td></tr>
+        </tbody>
+    </table>
+
+    <p style="color: var(--text-muted); font-size: 0.9rem;">
+        These are theoretical estimates. Your actual numbers may vary based on implementation quality,
+        ESP32 processing overhead, and protocol efficiency.
+    </p>
+
+    <!-- ===== WIRING ===== -->
+    <h2>Wiring (Baseline)</h2>
+    <table>
+        <thead>
+            <tr><th>Signal</th><th>FPGA (JP1 Header)</th><th>ESP32</th><th>Direction</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>FPGA TX &rarr; ESP32 RX</td><td class="mono">GPIO[1] / Pin 2 / PIN_W10</td><td class="mono">GPIO17</td><td>FPGA &rarr; ESP32</td></tr>
+            <tr><td>ESP32 TX &rarr; FPGA RX</td><td class="mono">GPIO[0] / Pin 1 / PIN_V10</td><td class="mono">GPIO16</td><td>ESP32 &rarr; FPGA</td></tr>
+            <tr><td>Ground</td><td class="mono">Pin 12 (GND)</td><td class="mono">GND</td><td>&mdash;</td></tr>
+        </tbody>
+    </table>
+    <p>You may add additional wires to the JP1 header if your solution uses more GPIO pins (SPI, parallel, etc.).</p>
+
+    <!-- ===== HOW TO RUN ===== -->
+    <h2>How to Run</h2>
+    <ol>
+        <li>Flash the FPGA with the provided <code>speed_loopback_top.sof</code></li>
+        <li>Flash the ESP32 with your firmware</li>
+        <li>Connect the wires between JP1 and ESP32</li>
+        <li>Press <strong>KEY[0]</strong> to start a run</li>
+        <li>Wait for LEDR[9] to turn off (run complete)</li>
+        <li>Read the result:
+            <ul>
+                <li><strong>LEDR[0]</strong> = green = PASS (checksum correct)</li>
+                <li><strong>LEDR[1]</strong> = red = FAIL (checksum mismatch)</li>
+                <li><strong>HEX5..0</strong> = elapsed time in ms (hexadecimal)</li>
+            </ul>
+        </li>
+        <li>Toggle <strong>SW[9]</strong> up to see debug info: expected checksum (HEX3..2) vs received (HEX1..0)</li>
+        <li>Press <strong>KEY[0]</strong> again to re-run</li>
+    </ol>
+
+    <!-- ===== SOURCE FILES ===== -->
+    <h2>Source Files</h2>
+    <h3>FPGA (SystemVerilog)</h3>
+    <div class="file-list">
+        <div class="file-card">
+            <h4>speed_loopback_top.sv</h4>
+            <p>Top module: LFSR, sum, timer, comparator, state machine, UART instantiation. <strong style="color:#fca5a5;">Fixed</strong> except communication.</p>
+        </div>
+        <div class="file-card">
+            <h4>uart_tx.sv</h4>
+            <p>UART transmitter (9600 baud baseline). <strong style="color:#86efac;">Replace me!</strong></p>
+        </div>
+        <div class="file-card">
+            <h4>uart_rx.sv</h4>
+            <p>UART receiver (9600 baud baseline). <strong style="color:#86efac;">Replace me!</strong></p>
+        </div>
+        <div class="file-card">
+            <h4>seven_segment.sv</h4>
+            <p>Hex digit to 7-segment decoder. Fixed.</p>
+        </div>
+    </div>
+
+    <h3>ESP32 (Arduino / PlatformIO)</h3>
+    <div class="file-list">
+        <div class="file-card">
+            <h4>main.cpp</h4>
+            <p>Baseline: single 9600-baud UART, sequential receive, compute sum, send checksum. <strong style="color:#86efac;">Rewrite me!</strong></p>
+        </div>
+        <div class="file-card">
+            <h4>platformio.ini</h4>
+            <p>ESP32 build config with OLED libraries.</p>
+        </div>
+    </div>
+
+    <!-- ===== TIPS ===== -->
+    <h2>Optimization Ideas</h2>
+    <ul>
+        <li><strong>Increase baud rate:</strong> Change the UART baud parameter in both FPGA and ESP32. The FPGA can do any baud. The ESP32 supports up to ~5 Mbaud.</li>
+        <li><strong>Multiple UARTs:</strong> The ESP32 has UART1 and UART2 available. Instantiate two UART TX modules on the FPGA, each sending half the data on different GPIO pins.</li>
+        <li><strong>SPI:</strong> Use the ESP32 as an SPI slave. SPI can clock at 10+ MHz with full-duplex capability. You'll need to write an SPI master on the FPGA.</li>
+        <li><strong>Parallel bus:</strong> Use 8 GPIO pins as a parallel data bus with a clock and handshake signal. Maximum throughput but uses the most wires.</li>
+        <li><strong>Minimize ESP32 overhead:</strong> Disable the OLED updates during data transfer. Use DMA if available. Process data in bulk, not byte-by-byte.</li>
+    </ul>
+
+    <div class="callout callout-warn">
+        <strong>Hint:</strong> The biggest wins come from changing the physical interface (UART &rarr; SPI/parallel),
+        not from micro-optimizing the ESP32 code. Focus on the communication layer first.
+    </div>
+
+    <footer>
+        CrashTech VLSI-2026 &mdash; Intel Haifa &mdash; Speed Loopback Challenge
+    </footer>
+
+</div>
+</body>
+</html>
