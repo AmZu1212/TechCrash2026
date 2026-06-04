@@ -111,11 +111,13 @@ module digital_voltmeter_top (
 
     // ====================================================================
     // Voltage Computation
-    //   voltage_cV = (adc_raw * 330) >> 12   (centvolts, 0.01 V units)
-    //   Approximates: adc_raw / 4095 * 3.30 V * 100
-    //   Range: 0 – 329  (3.29 V at full scale; error < 1 cV = 10 mV)
+    //   VCCADC on DE10-Lite = 5.00 V (full-scale reference for MAX10 ADC)
+    //   voltage_cV = (adc_raw * 500) >> 12   (centvolts, 0.01 V units)
+    //   Approximates: adc_raw / 4096 * 5.00 V * 100
+    //   Range: 0 – 500  (5.00 V at full scale)
+    //   Arduino A0 is limited to 3.3 V, so displayed max ≈ 3.30 V
     // ====================================================================
-    wire [23:0] v_prod_cV   = {12'd0, adc_raw} * 24'd330;
+    wire [23:0] v_prod_cV   = {12'd0, adc_raw} * 24'd500;
     wire [11:0] v_cV        = v_prod_cV[23:12];   // >> 12
 
     // BCD digit extraction
@@ -222,16 +224,23 @@ module digital_voltmeter_top (
                 end
 
                 TX_BYTE_LOAD: begin
-                    // Select the byte for this index
+                    // 5-byte ASCII frame: "X.XX\n"
+                    //   Byte 0: ones digit   ('0'-'3', 0x30+ones)
+                    //   Byte 1: '.'          (0x2E)
+                    //   Byte 2: tenths digit ('0'-'9', 0x30+tenths)
+                    //   Byte 3: hundredths   ('0'-'9', 0x30+hundredths)
+                    //   Byte 4: '\n'         (0x0A) -- frame delimiter
+                    // ASCII digits (0x30-0x39) and '.' (0x2E) never equal
+                    // '\n' (0x0A), so the ESP32 can re-sync by line.
                     case (tx_byte_idx)
-                        3'd0: uart_tx_data <= {4'h0, lat_ones};
-                        3'd1: uart_tx_data <= {4'h0, lat_tenths};
-                        3'd2: uart_tx_data <= {4'h0, lat_hundredths};
-                        3'd3: uart_tx_data <= lat_led[7:0];
-                        3'd4: uart_tx_data <= {6'h0, lat_led[9:8]};
-                        default: uart_tx_data <= 8'h00;
+                        3'd0: uart_tx_data <= {4'h3, lat_ones};       // '0'-'3'
+                        3'd1: uart_tx_data <= 8'h2E;                  // '.'
+                        3'd2: uart_tx_data <= {4'h3, lat_tenths};     // '0'-'9'
+                        3'd3: uart_tx_data <= {4'h3, lat_hundredths}; // '0'-'9'
+                        3'd4: uart_tx_data <= 8'h0A;                  // '\n'
+                        default: uart_tx_data <= 8'h0A;
                     endcase
-                    uart_tx_start <= 1'b1;    // Pulse tx_start
+                    uart_tx_start <= 1'b1;
                     tx_fsm        <= TX_BYTE_GAP;
                 end
 
@@ -244,7 +253,7 @@ module digital_voltmeter_top (
                     if (!uart_tx_busy) begin
                         // Byte transmission complete
                         if (tx_byte_idx == 3'd4) begin
-                            tx_fsm <= TX_IDLE;   // Full frame sent
+                            tx_fsm <= TX_IDLE;   // Full 5-byte ASCII frame sent
                         end else begin
                             tx_byte_idx <= tx_byte_idx + 1;
                             tx_fsm      <= TX_BYTE_LOAD;
