@@ -136,28 +136,36 @@ void parseByte(uint8_t b) {
 }
 
 Point2 projectVertex(Vec3 v, float pitchRad, float rollRad) {
+    // Constant 90° yaw offset: pre-rotate around Y axis so the cube faces
+    // a different direction. Y-rot 90°: x'=z, y'=y, z'=-x
+    float vx = v.z;
+    float vy = v.y;
+    float vz = -v.x;
+
     float cp = cosf(pitchRad);
     float sp = sinf(pitchRad);
     float cr = cosf(rollRad);
-    float sr = sinf(rollRad);
+    float sr = -sinf(rollRad);  // negated to flip roll direction
 
     // Rotate around X by pitch.
-    float y1 = v.y * cp - v.z * sp;
-    float z1 = v.y * sp + v.z * cp;
-    float x1 = v.x;
+    float y1 = vy * cp - vz * sp;
+    float z1 = vy * sp + vz * cp;
+    float x1 = vx;
 
     // Rotate around Z by roll.
     float x2 = x1 * cr - y1 * sr;
     float y2 = x1 * sr + y1 * cr;
     float z2 = z1;
 
+    // Top-down view: camera above on +Y axis looking down.
+    // Depth axis = -y2, screen axes = x2 (horizontal) and z2 (vertical).
     const float cameraDistance = 4.0f;
-    const float scale = 23.0f;
-    float perspective = scale / (cameraDistance + z2);
+    const float scale = 48.0f;
+    float perspective = scale / (cameraDistance - y2);
 
     Point2 p;
     p.x = (int16_t)(64.0f + x2 * perspective);
-    p.y = (int16_t)(34.0f + y2 * perspective);
+    p.y = (int16_t)(36.0f + z2 * perspective);
     return p;
 }
 
@@ -183,11 +191,10 @@ void drawCube() {
     display.setCursor(0, 0);
     display.printf("P:%4.0f R:%4.0f", smoothPitchDeg, smoothRollDeg);
 
-    display.setCursor(0, 56);
-    display.printf("X:%d Y:%d Z:%d", rawX, rawY, rawZ);
-
-    float pitchRad = smoothPitchDeg * PI / 180.0f;
-    float rollRad = smoothRollDeg * PI / 180.0f;
+    // View from 90° left of FPGA: physical roll drives cube pitch,
+    // physical pitch drives cube roll (negated so high pitch = roll low).
+    float pitchRad =  smoothRollDeg  * PI / 180.0f;
+    float rollRad  =  smoothPitchDeg * PI / 180.0f;
     Point2 projected[8];
 
     for (uint8_t i = 0; i < 8; i++) {
@@ -200,7 +207,7 @@ void drawCube() {
         display.drawLine(a.x, a.y, b.x, b.y, SSD1306_WHITE);
     }
 
-    display.drawPixel(64, 34, SSD1306_WHITE);
+    display.drawPixel(64, 36, SSD1306_WHITE);
     display.display();
 }
 

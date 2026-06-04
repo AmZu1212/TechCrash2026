@@ -160,13 +160,30 @@ module accelerometer_cube_top (
         end
     end
 
+    // ---- Diagnostic latches ----
+    // LEDR[0] = GSENSOR_SDO level at idle (ON = pulled/driven high)
+    // LEDR[1] = sdo_was_low: SDO went low WHILE CS was low (ADXL345 drove a 0 bit)
+    // LEDR[2] = cs_was_low:  CS_N ever went low (confirms CS output is toggling)
+    logic sdo_was_low;
+    logic cs_was_low;
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            sdo_was_low <= 1'b0;
+            cs_was_low  <= 1'b0;
+        end else begin
+            if (!GSENSOR_CS_N && !GSENSOR_SDO) sdo_was_low <= 1'b1;
+            if (!GSENSOR_CS_N)                 cs_was_low  <= 1'b1;
+        end
+    end
+
     // ---- Tilt LEDs ----
     localparam signed [15:0] TILT_THRESHOLD = 16'sd80;
 
-    assign LEDR[0] = (x_raw < -TILT_THRESHOLD);  // left
-    assign LEDR[1] = (x_raw >  TILT_THRESHOLD);  // right
-    assign LEDR[2] = (y_raw >  TILT_THRESHOLD);  // forward
+    assign LEDR[0] = GSENSOR_SDO;   // instantaneous SDO level (idle=0 means pulled/driven low)
+    assign LEDR[1] = sdo_was_low;   // DIAGNOSTIC: sticky — SDO went low during CS-active
+    assign LEDR[2] = cs_was_low;    // DIAGNOSTIC: sticky — CS_N ever went low
     assign LEDR[3] = (y_raw < -TILT_THRESHOLD);  // back
+    // NOTE: LEDR[0]=SDO idle level, LEDR[1]=SDO-low-during-CS latch (diagnostic)
     assign LEDR[4] = frame_toggle;
     assign LEDR[5] = tx_busy;
     assign LEDR[6] = init_done;

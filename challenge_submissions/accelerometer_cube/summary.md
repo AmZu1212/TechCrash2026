@@ -1,34 +1,77 @@
-# Accelerometer 3D Cube
+# Challenge: Accelerometer 3D Cube
 
-The FPGA reads the DE10-Lite onboard ADXL345 accelerometer over SPI, streams raw X/Y/Z acceleration bytes to the ESP32 over UART, and the ESP32 renders a tilt-controlled wireframe cube on the OLED.
+Real-time 3D wireframe cube on an SSD1306 OLED, driven by the DE10-Lite's onboard ADXL345 accelerometer. The FPGA reads the sensor over SPI and streams raw X/Y/Z data to the ESP32 over UART. The ESP32 computes pitch/roll and renders a perspective-correct rotating cube at 30 Hz.
 
 ## How It Works
 
-1. The FPGA initializes the onboard ADXL345:
-   - Reads `DEVID` register `0x00` and expects `0xE5`
-   - Sets `DATA_FORMAT` register `0x31` to full-resolution mode
-   - Sets `BW_RATE` register `0x2C` to 100 Hz output data rate
-   - Sets `POWER_CTL` register `0x2D` to measurement mode
-2. The FPGA reads six raw bytes from `DATAX0..DATAZ1` about 30 times per second.
-3. Each sample is sent to the ESP32 as a 10-byte binary UART frame:
-   - `A5 5A SEQ X0 X1 Y0 Y1 Z0 Z1 SUM`
-   - `SUM = SEQ + X0 + X1 + Y0 + Y1 + Z0 + Z1` modulo 256
-4. The ESP32 receives and validates frames, converts the raw bytes to signed `int16_t` X/Y/Z values, then computes pitch and roll.
-5. The ESP32 smooths pitch/roll and draws a projected wireframe cube on the SSD1306 OLED.
-6. FPGA LEDs show tilt direction and debug status.
+### FPGA Side
+1. `adxl345_spi` state machine initialises the ADXL345 at startup (full-res, 100 Hz output rate, measure mode) using SPI mode 3 at 1 MHz.
+2. After init, axes are read at 30 Hz. Raw signed 16-bit X/Y/Z values are passed to the UART TX framer.
+3. `uart_tx` sends a 10-byte binary frame on `ARDUINO_IO[1]` at 9600 baud:
+
+   ```
+   A5  5A  SEQ  X0  X1  Y0  Y1  Z0  Z1  SUM
+   ```
+   - `SEQ` — rolling frame counter (8-bit, wraps at 255).
+   - `X0/X1` — X raw little-endian (LSB first).
+   - `Y0/Y1` — Y raw little-endian.
+   - `Z0/Z1` — Z raw little-endian.
+   - `SUM` — low 8 bits of `SEQ + X0 + X1 + Y0 + Y1 + Z0 + Z1`.
+
+4. LEDR debug map (active while running, SW[9] & KEY[0] must both be high):
+
+   | LED | Meaning |
+   |-----|---------|
+   | LEDR[0] | GSENSOR_SDO level (ON = high/idle) |
+   | LEDR[1] | Sticky: SDO went low during CS assertion |
+   | LEDR[2] | Sticky: CS_N ever went low |
+   | LEDR[3] | Y tilt backward (raw < −80) |
+   | LEDR[4] | Frame toggle — pulses every UART frame |
+   | LEDR[5] | UART TX busy |
+   | LEDR[6] | ADXL345 init complete |
+   | LEDR[7] | DEVID verified (0xE5 received) |
+   | LEDR[8] | CS_N active (instantaneous) |
+   | LEDR[9] | rst_n (SW[9] & KEY[0]) |
+
+5. HEX display:
+
+   | Display | Meaning |
+   |---------|---------|
+   | HEX1:0 | ADXL345 DEVID (should show `E5` when healthy) |
+   | HEX2 | UART frame counter (cycles 0–F) |
+   | HEX3 | SPI state machine state (6 = ST_WAIT = sampling normally) |
+   | HEX4 | GSENSOR_INT1 |
+   | HEX5 | GSENSOR_INT2 |
+
+### ESP32 Side
+1. `HardwareSerial(2)` receives frames on GPIO17 (RX) from `ARDUINO_IO[1]`.
+2. A 3-state byte parser (`WAIT_A5 → WAIT_5A → READ_BODY`) reassembles each frame and validates the checksum.
+3. From the raw axes, pitch and roll angles are computed:
+   ```cpp
+   rollDeg  = atan2f(y, z)              * 180/PI;
+   pitchDeg = atan2f(-x, sqrt(y²+z²))  * 180/PI;
+   ```
+   Both are low-pass filtered (α = 0.18) for smooth rendering.
+4. **Axis mapping** (tuned to view from the left side of the FPGA, top-down camera):
+   - Cube pitch ← physical roll
+   - Cube roll  ← physical pitch
+5. `projectVertex` applies the rotation then uses a simple perspective divide (camera at distance 4, scale 48). Camera is above (+Y), so depth axis is `−y2`; screen axes are `x2` (horizontal) and `z2` (vertical). A fixed 90° Y-axis pre-rotation orients the cube face correctly.
+6. The OLED header line shows `P:nnn R:nnn` (raw sensor pitch/roll degrees). The cube fills the remainder of the 128×64 display at scale=48.
+
+> **Note:** Yaw is not measured — the ADXL345 is a 3-axis accelerometer only. Yaw requires a magnetometer or gyroscope.
+
+---
 
 ## Wiring
 
-| Component | Pin | Wire | DE10-Lite / ESP32 Pin | Function |
-|-----------|-----|------|------------------------|----------|
-| DE10-Lite | ARDUINO_IO[1] | -> | ESP32 GPIO17 | FPGA UART TX -> ESP32 UART RX |
-| ESP32 | GPIO21 | -> | OLED SDA | I2C data |
-| ESP32 | GPIO22 | -> | OLED SCL | I2C clock |
-| ESP32 | 3.3V | -> | OLED VCC | OLED power |
-| ESP32 | GND | -> | OLED GND | OLED ground |
-| ESP32 | GND | <-> | DE10-Lite Arduino GND | Common ground |
+| Signal | FPGA pin | Arduino header | ESP32 |
+|--------|----------|----------------|-------|
+| UART TX (FPGA→ESP32) | PIN_AB6 | ARDUINO_IO[1] | GPIO17 (RX) |
+| UART RX (ESP32→FPGA) | PIN_AB5 | ARDUINO_IO[0] | GPIO16 (TX) — unused |
+| OLED SDA | — | — | PIN_OLED_SDA (see pin_config.h) |
+| OLED SCL | — | — | PIN_OLED_SCL (see pin_config.h) |
 
-No external wires are needed for the accelerometer. The ADXL345 is onboard the DE10-Lite and connected directly to FPGA pins:
+ADXL345 onboard FPGA pins:
 
 | Signal | FPGA Pin |
 |--------|----------|
@@ -39,62 +82,58 @@ No external wires are needed for the accelerometer. The ADXL345 is onboard the D
 | GSENSOR_INT1 | PIN_Y14 |
 | GSENSOR_INT2 | PIN_Y13 |
 
-## FPGA LED Meaning
+---
 
-| LED | Meaning |
-|-----|---------|
-| LEDR[0] | Tilt left |
-| LEDR[1] | Tilt right |
-| LEDR[2] | Tilt forward |
-| LEDR[3] | Tilt back |
-| LEDR[4] | Toggles on each sampled frame |
-| LEDR[5] | UART transmitter busy |
-| LEDR[6] | ADXL345 init sequence completed |
-| LEDR[7] | ADXL345 device ID matched `0xE5` |
-| LEDR[8] | ADXL345 SPI chip-select active |
-| LEDR[9] | FPGA reset released |
-
-HEX1:HEX0 show the ADXL345 device ID. A healthy board should show `E5`.
-
-## Project Files
-
-- `fpga/src/accelerometer_cube_top.sv` - top module, UART framing, LEDs, debug displays
-- `fpga/src/adxl345_spi.sv` - ADXL345 SPI initialization and raw sample reader
-- `fpga/src/uart_tx.sv` - 9600 baud 8N1 UART transmitter
-- `fpga/src/seven_segment.sv` - active-low hex seven-segment decoder
-- `fpga/accelerometer_cube_top.qsf` - Quartus pin assignments
-- `esp32/src/main.cpp` - UART frame parser, pitch/roll math, OLED wireframe cube renderer
-- `esp32/platformio.ini` - PlatformIO ESP32 build config
-
-## Build
+## Build & Flash
 
 ### FPGA
-
 ```powershell
 cd challenge_submissions/accelerometer_cube/fpga
-& "C:\intelFPGA_lite\17.1\quartus\bin64\quartus_sh.exe" --flow compile accelerometer_cube_top
+C:\intelFPGA_lite\17.1\quartus\bin64\quartus_sh.exe --flow compile accelerometer_cube_top
+C:\intelFPGA_lite\17.1\quartus\bin64\quartus_pgm.exe -c "USB-Blaster [USB-1]" -m JTAG -o "P;output_files/accelerometer_cube_top.sof"
 ```
 
 ### ESP32
-
 ```powershell
 cd challenge_submissions/accelerometer_cube/esp32
-$env:USERPROFILE\.platformio\penv\Scripts\pio.exe run
+$PIO = "$env:USERPROFILE\.platformio\penv\Scripts\pio.exe"
+. $PIO run -t upload --upload-port COM5
 ```
 
-## Expected Behavior
+---
 
-- With `SW[9]` up and `KEY[0]` not pressed, the FPGA starts reading the accelerometer.
-- `LEDR[6]` turns on after the ADXL345 init sequence.
-- `LEDR[7]` turns on if the FPGA read `DEVID = 0xE5`.
-- `HEX1:HEX0` show `E5`.
-- The ESP32 OLED shows a wireframe cube.
-- Tilting the DE10-Lite changes the cube rotation live.
-- LEDR[0..3] indicate left/right/forward/back tilt.
+## Expected Behaviour
+
+- OLED shows `P:nnn R:nnn` on the top line and a wireframe cube below.
+- Tilting the FPGA board rotates the cube smoothly in real time.
+- `LEDR[6]` (init done) and `LEDR[7]` (devid OK) should both be ON within ~1 s of reset.
+- HEX3 should read `6` (ST_WAIT) during normal operation.
+- HEX1:0 should read `E5`.
+
+---
+
+## Project Files
+
+| File | Purpose |
+|------|---------|
+| `fpga/src/accelerometer_cube_top.sv` | Top module: UART framing, LEDs, HEX debug |
+| `fpga/src/adxl345_spi.sv` | ADXL345 SPI init + 30 Hz axis reader |
+| `fpga/src/uart_tx.sv` | Parameterised 9600 8N1 UART TX |
+| `fpga/src/seven_segment.sv` | Active-low hex 7-segment decoder |
+| `fpga/accelerometer_cube_top.qsf` | Quartus pin assignments |
+| `esp32/src/main.cpp` | Frame parser, pitch/roll math, OLED cube renderer |
+| `esp32/platformio.ini` | PlatformIO build config |
+
+---
 
 ## Troubleshooting
 
-- If the OLED says `Waiting for FPGA...`, check the UART wire from FPGA `ARDUINO_IO[1]` to ESP32 GPIO17 and confirm both boards share ground.
-- If `LEDR[6]` is on but `LEDR[7]` is off, the FPGA is running but did not read ADXL345 device ID `0xE5`; check the bitstream and accelerometer pin assignments.
-- If the cube moves but feels reversed, swap sign conventions in the ESP32 pitch/roll calculation or the FPGA LED direction labels.
-- If the display is blank, press ESP32 EN/reset and confirm the OLED address is `0x3C`.
+| Symptom | Likely cause |
+|---------|-------------|
+| All LEDs off | SW[9] or KEY[0] is low — both must be high to release reset |
+| LEDR[7] off, HEX1:0 = FF | ADXL345 not responding on SPI MISO — check LEDR[2] to verify CS_N toggles |
+| LEDR[2] off | CS_N stuck high — check QSF pin assignment for GSENSOR_CS_N |
+| Cube frozen, LEDR[4] not flashing | No valid UART frames reaching ESP32 — check ARDUINO_IO[1]/GPIO17 wiring |
+| OLED shows "Waiting for FPGA..." | FPGA not sending frames — check board is programmed and reset released |
+| Cube rotates in wrong direction | Adjust sign/swap of `pitchRad`/`rollRad` in `drawCube()` in `main.cpp` |
+| OLED blank | Press ESP32 EN; confirm OLED I2C address is 0x3C |
