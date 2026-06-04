@@ -65,6 +65,24 @@ Each challenge/demo has parallel `esp32/` and `fpga/` folders:
 - `esp32/platformio.ini` + `esp32/src/main.cpp`
 - `fpga/<project>.qpf` + `fpga/<project>.qsf` + `fpga/src/<top>.sv`
 
+### ESP32 Buzzer / Sound
+
+- Passive buzzer on **GPIO19** (`PIN_BUZZER`), driven by Arduino `tone(pin, freq)` / `noTone(pin)`.
+- Use a **non-blocking** playback pattern — never `delay()` inside `loop()`:
+  ```cpp
+  struct Note { uint16_t freq; uint16_t dur_ms; };  // freq=0 → rest
+  // State: tuneActive, tuneNoteIdx, tuneNoteStart
+  // startTune() — kick off; stopTune() — silence; updateTune() — call every loop()
+  ```
+- A `tunePlayed` flag (cleared when returning to idle screen) prevents the melody
+  from restarting each time the FPGA sends a repeated result frame.
+- **Melody source:** Note frequencies (Hz) follow standard 12-TET equal temperament
+  (A4 = 440 Hz). Values are taken directly from the Arduino `pitches.h` frequency
+  table (e.g. `NOTE_G5 = 784`, `NOTE_A5 = 880`, `NOTE_C6 = 1047`). To add a new
+  tune, look up each note name in `pitches.h`, write it as a `Note` array entry,
+  and include a short rest (`freq=0`) between notes for crisp articulation on a
+  passive buzzer.
+
 ### What NOT to Do
 
 - Do NOT default to JP1 GPIO header pins. Use the Arduino header (`ARDUINO_IO[0..15]`)
