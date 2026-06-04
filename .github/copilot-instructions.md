@@ -111,6 +111,25 @@ Each challenge/demo has parallel `esp32/` and `fpga/` folders:
 - SDO idles high due to DE10-Lite PCB pull-up (LEDR showing SDO=1 at idle is normal).
 - The GSENSOR_* ports are **extra ports beyond the standard RTL template** and must be added to the top module declaration alongside the standard ports.
 
+### FPGA Zero-Crossing Frequency Detection
+
+- Formula: `freq = ZC × Fs / (2N)` where ZC = zero-crossings, Fs = sample rate, N = window size.
+  - For 8000 Hz / 256 samples: `freq = ZC × 15.625 Hz` → implement as `zc * 125 / 8` (shift right 3).
+  - Multiply first, then bit-select for the divide: `freq_hz = (zc * 125)[13:3]`.
+- **Off-by-one is expected and acceptable:** byte 0 initialises `prev_sign` without counting a crossing → consistent −15.6 Hz bias, within ±35 Hz spec.
+- Use `rx_byte[7]` (MSB = sign bit) for zero-crossing, not a threshold comparison — works for signed 8-bit samples.
+- Frame sync: use a **gap timer** (e.g. 5 ms = 250,000 cycles at 50 MHz) to reset `byte_cnt` on stale partial frames.
+- Debug mode: `SW[9]` toggles between displaying Hz and displaying raw ZC count on the 7-segs.
+
+### FPGA Binary-to-BCD (Double-Dabble)
+
+- Use the double-dabble (shift-and-add-3) algorithm for combinational binary → BCD conversion.
+- For an N-bit input and D BCD digits: scratch register is `(4*D + N)` bits; iterate N times:
+  - Before each left-shift: add 3 to any BCD nibble ≥ 5.
+  - After N iterations the upper `4*D` bits hold the BCD digits (MSB = most significant digit).
+- 11-bit input (0–2047) → 4 digits, scratch = 27 bits. Fits in MAX 10 combinational logic.
+- Always instantiate as a separate module (`bin_to_bcd.sv`) so it can be reused for multiple values (e.g. frequency + debug ZC count).
+
 ### What NOT to Do
 
 - Do NOT default to JP1 GPIO header pins. Use the Arduino header (`ARDUINO_IO[0..15]`)
