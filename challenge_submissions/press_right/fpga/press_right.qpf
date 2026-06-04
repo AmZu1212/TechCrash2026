@@ -1,0 +1,6 @@
+QUARTUS_VERSION = "17.1"
+DATE = "2026.06.04"
+
+# Revisions
+
+PROJECT_REVISION = "press_right"
