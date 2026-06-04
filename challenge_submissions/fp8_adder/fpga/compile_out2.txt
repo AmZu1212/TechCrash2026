@@ -1,0 +1,58 @@
+﻿Info: *******************************************************************
+Info: Running Quartus Prime Shell
+    Info: Version 17.1.0 Build 590 10/25/2017 SJ Lite Edition
+    Info: Copyright (C) 2017  Intel Corporation. All rights reserved.
+    Info: Your use of Intel Corporation's design tools, logic functions 
+    Info: and other software and tools, and its AMPP partner logic 
+    Info: functions, and any output files from any of the foregoing 
+    Info: (including device programming or simulation files), and any 
+    Info: associated documentation or information are expressly subject 
+    Info: to the terms and conditions of the Intel Program License 
+    Info: Subscription Agreement, the Intel Quartus Prime License Agreement,
+    Info: the Intel FPGA IP License Agreement, or other applicable license
+    Info: agreement, including, without limitation, that your use is for
+    Info: the sole purpose of programming logic devices manufactured by
+    Info: Intel and sold by Intel or its authorized distributors.  Please
+    Info: refer to the applicable agreement for further details.
+    Info: Processing started: Fri Jun 05 00:28:19 2026
+Info: Command: quartus_sh --flow compile fp8_adder
+Info: Quartus(args): compile fp8_adder
+Info: Project Name = C:/Users/Administrator/Desktop/Hackathon 2026/Our Fork/TechCrash2026/challenge_submissions/fp8_adder/fpga/fp8_adder
+Info: Revision Name = fp8_adder
+Info: *******************************************************************
+Info: Running Quartus Prime Analysis & Synthesis
+    Info: Version 17.1.0 Build 590 10/25/2017 SJ Lite Edition
+    Info: Processing started: Fri Jun 05 00:28:20 2026
+Info: Command: quartus_map --read_settings_files=on --write_settings_files=off fp8_adder -c fp8_adder
+Info (20030): Parallel compilation is enabled and will use 16 of the 16 processors detected
+Info (12021): Found 1 design units, including 1 entities, in source file src/fp8_top.v
+    Info (12023): Found entity 1: fp8_top File: C:/Users/Administrator/Desktop/Hackathon 2026/Our Fork/TechCrash2026/challenge_submissions/fp8_adder/fpga/src/fp8_top.v Line: 25
+Info (12021): Found 1 design units, including 1 entities, in source file src/challenge_pll.v
+    Info (12023): Found entity 1: challenge_pll File: C:/Users/Administrator/Desktop/Hackathon 2026/Our Fork/TechCrash2026/challenge_submissions/fp8_adder/fpga/src/challenge_pll.v Line: 17
+Info (12021): Found 1 design units, including 1 entities, in source file src/fp8_adder.v
+    Info (12023): Found entity 1: fp8_adder File: C:/Users/Administrator/Desktop/Hackathon 2026/Our Fork/TechCrash2026/challenge_submissions/fp8_adder/fpga/src/fp8_adder.v Line: 17
+Error (10228): Verilog HDL error at fp8_add_comb.v(148): module "fp8_add_comb" cannot be declared more than once File: C:/Users/Administrator/Desktop/Hackathon 2026/Our Fork/TechCrash2026/challenge_submissions/fp8_adder/fpga/src/fp8_add_comb.v Line: 148
+Info (10499): HDL info at fp8_add_comb.v(10): see declaration for object "fp8_add_comb" File: C:/Users/Administrator/Desktop/Hackathon 2026/Our Fork/TechCrash2026/challenge_submissions/fp8_adder/fpga/src/fp8_add_comb.v Line: 10
+Info (12021): Found 0 design units, including 0 entities, in source file src/fp8_add_comb.v
+Warning (10229): Verilog HDL Expression warning at test_controller.v(43): truncated literal to match 12 bits File: C:/Users/Administrator/Desktop/Hackathon 2026/Our Fork/TechCrash2026/challenge_submissions/fp8_adder/fpga/src/test_controller.v Line: 43
+Info (12021): Found 1 design units, including 1 entities, in source file src/test_controller.v
+    Info (12023): Found entity 1: test_controller File: C:/Users/Administrator/Desktop/Hackathon 2026/Our Fork/TechCrash2026/challenge_submissions/fp8_adder/fpga/src/test_controller.v Line: 15
+Info (12021): Found 1 design units, including 1 entities, in source file src/seg7_hex.v
+    Info (12023): Found entity 1: seg7_hex File: C:/Users/Administrator/Desktop/Hackathon 2026/Our Fork/TechCrash2026/challenge_submissions/fp8_adder/fpga/src/seg7_hex.v Line: 10
+Info (12021): Found 1 design units, including 1 entities, in source file src/rom_8x4096.v
+    Info (12023): Found entity 1: rom_8x4096 File: C:/Users/Administrator/Desktop/Hackathon 2026/Our Fork/TechCrash2026/challenge_submissions/fp8_adder/fpga/src/rom_8x4096.v Line: 9
+Error: Quartus Prime Analysis & Synthesis was unsuccessful. 1 error, 1 warning
+    Error: Peak virtual memory: 4708 megabytes
+    Error: Processing ended: Fri Jun 05 00:28:30 2026
+    Error: Elapsed time: 00:00:10
+    Error: Total CPU time (on all processors): 00:00:24
+Error (293001): Quartus Prime Full Compilation was unsuccessful. 3 errors, 1 warning
+Error: Flow compile (for project C:/Users/Administrator/Desktop/Hackathon 2026/Our Fork/TechCrash2026/challenge_submissions/fp8_adder/fpga/fp8_adder) was not successful
+Error: ERROR: Error(s) found while running an executable. See report file(s) for error message(s). Message log indicates which executable was run last.
+
+Error (23031): Evaluation of Tcl script c:/intelfpga_lite/17.1/quartus/common/tcl/internal/qsh_flow.tcl unsuccessful
+Error: Quartus Prime Shell was unsuccessful. 10 errors, 1 warning
+    Error: Peak virtual memory: 4638 megabytes
+    Error: Processing ended: Fri Jun 05 00:28:31 2026
+    Error: Elapsed time: 00:00:12
+    Error: Total CPU time (on all processors): 00:00:23
