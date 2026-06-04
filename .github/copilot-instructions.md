@@ -83,6 +83,34 @@ Each challenge/demo has parallel `esp32/` and `fpga/` folders:
   and include a short rest (`freq=0`) between notes for crisp articulation on a
   passive buzzer.
 
+### ESP32 OLED 3D Cube Renderer
+
+- SSD1306 128×64, I2C via Adafruit SSD1306 + GFX libs.
+- Wireframe cube: 8 vertices × 12 edges, perspective divide with `scale / (cameraDistance ± depth)`.
+- Camera perspective is chosen by which axis is used as depth in the projection:
+  - **Front view**: depth = `z2`, screen = (`x2`, `y2`)
+  - **Top-down view**: depth = `-y2`, screen = (`x2`, `z2`) ← accelerometer cube uses this
+- Axis mapping between physical tilt and cube rotation is controlled in `drawCube()`:
+  ```cpp
+  float pitchRad = smoothRollDeg  * PI / 180.0f;  // physical roll → cube pitch
+  float rollRad  = smoothPitchDeg * PI / 180.0f;  // physical pitch → cube roll
+  ```
+  Negate either to flip that direction. Swap to change which physical axis drives which rotation.
+- A constant yaw offset (pre-rotation of vertices around Y before applying pitch/roll) controls which face is presented at rest.
+- Pitch and roll are low-pass filtered (α = 0.18) for smooth rendering.
+- **Yaw is not measurable** from a pure accelerometer — gravity vector is unchanged by rotation around the vertical axis. Requires magnetometer or gyroscope.
+
+### ADXL345 Onboard Accelerometer (DE10-Lite)
+
+- SPI mode 3 (CPOL=1, CPHA=1), 1 MHz, MSB first.
+- Pins: SCLK=PIN_AB15, SDI=PIN_V11, SDO=PIN_V12, CS_N=PIN_AB16, INT1=PIN_Y14, INT2=PIN_Y13.
+- DEVID register 0x00 should return 0xE5.
+- Init sequence: READ_DEVID → DATA_FORMAT (0x31=0x08 full-res) → BW_RATE (0x2C=0x0A) → POWER_CTL (0x2D=0x08 measure).
+- Axis read command: 0xF2 (read | multi-byte | reg 0x32), 7 bytes total (1 cmd + 6 data).
+- INT2 asserted on startup is normal — the chip is powered even if SPI is not responding.
+- SDO idles high due to DE10-Lite PCB pull-up (LEDR showing SDO=1 at idle is normal).
+- The GSENSOR_* ports are **extra ports beyond the standard RTL template** and must be added to the top module declaration alongside the standard ports.
+
 ### What NOT to Do
 
 - Do NOT default to JP1 GPIO header pins. Use the Arduino header (`ARDUINO_IO[0..15]`)
