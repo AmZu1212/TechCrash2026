@@ -59,8 +59,8 @@ uint32_t nextRandom() {
 }
 
 int16_t gapSizeForDifficulty() {
-    int16_t gap = 17 - (int16_t)(difficulty / 3);
-    if (gap < 12) gap = 12;
+    int16_t gap = 28 - (int16_t)difficulty;
+    if (gap < 13) gap = 13;
     return gap;
 }
 
@@ -196,7 +196,7 @@ void drawGame() {
     display.setTextSize(1);
 
     display.setCursor(1, 0);
-    display.printf("S:%03u", score);
+    display.printf("SCORE:%03u  Diff: %02u", score > 999 ? 999 : score, difficulty);
     display.drawFastHLine(0, HUD_H - 1, SCREEN_W, SSD1306_WHITE);
 
     int16_t gap = gapSizeForDifficulty();
