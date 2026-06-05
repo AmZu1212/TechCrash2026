@@ -10,9 +10,9 @@
 - gravity adds `0.22` velocity per frame
 - flap impulse sets velocity to `-2.45`
 - max falling velocity is `2.8`
-- active gameplay HUD is only `S:###` plus a one-pixel separator line
+- active gameplay HUD is `SCORE:###  Diff: ##` plus a one-pixel separator line
 - difficulty `0..15` maps to:
-  - gap size `max(12, 17 - difficulty / 3)`
+  - gap size `max(13, 28 - difficulty)`
   - pipe speed `1.0 + difficulty * 0.16`
 
 Part 2 and Part 3 now use the same bird rectangle collision and pipe-passing rule as Part 1. That means the neural network trains against the same game surface that manual control uses.

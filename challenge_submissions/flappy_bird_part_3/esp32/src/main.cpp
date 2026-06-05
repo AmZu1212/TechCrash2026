@@ -32,7 +32,7 @@ static const uint8_t WEIGHT_COUNT = 25;
 
 static const uint32_t FRAME_MS = 33;
 static const uint32_t TRAIN_DRAW_MS = 250;
-static const uint8_t TRAIN_STEPS_PER_TICK = 3;
+static const uint8_t TRAIN_STEPS_PER_TICK = 10;
 static const uint16_t EVAL_MAX_FRAMES = 1800;
 static const int16_t SCREEN_W = OLED_WIDTH;
 static const int16_t SCREEN_H = OLED_HEIGHT;
@@ -90,6 +90,7 @@ uint8_t difficulty = 0;
 bool fpgaInferenceMode = false;
 bool weightsUploaded = false;
 bool resetRequested = false;
+bool finishGenerationRequested = false;
 
 uint32_t generation = 1;
 uint16_t bestPipesEver = 0;
@@ -152,8 +153,8 @@ float sigmoid(float x) {
 }
 
 int16_t gapSizeForDifficulty() {
-    int16_t gap = 17 - (int16_t)(difficulty / 3);
-    if (gap < 12) gap = 12;
+    int16_t gap = 28 - (int16_t)difficulty;
+    if (gap < 13) gap = 13;
     return gap;
 }
 
@@ -427,9 +428,10 @@ void evolve() {
 }
 
 void updateTrainingSimulation() {
-    if (resetRequested) {
-        resetRequested = false;
-        initializeTraining();
+    if (finishGenerationRequested) {
+        finishGenerationRequested = false;
+        evolve();
+        return;
     }
 
     if (aliveCount() == 0) {
@@ -666,6 +668,9 @@ void sendStateToFpga(const Bird& bird) {
 
 void enterFpgaInferenceMode() {
     fpgaInferenceMode = true;
+    if (aliveCount() > 0) {
+        evolve();
+    }
     prepareAndUploadBrainToFpga();
     resetFpgaGame();
     sendStateToFpga(fpgaBird);
@@ -745,24 +750,26 @@ void drawTraining() {
     display.setTextSize(1);
 
     display.setCursor(0, 0);
-    display.printf("TR G:%lu A:%02u D:%u",
-                   (unsigned long)generation,
+    display.printf("Train Gen:%lu",
+                   (unsigned long)generation);
+    display.setCursor(0, 10);
+    display.printf("Alive:%02u Diff:%02u",
                    aliveCount(),
                    difficulty);
-    display.setCursor(0, 10);
-    display.printf("P:%lu %+ld",
-                   (unsigned long)lastChampionProgress,
-                   (long)championDelta);
     display.setCursor(0, 20);
-    display.printf("C:%u B:%u H:%u",
-                   lastChampionPipes,
-                   bestPipesEver,
-                   archiveCount);
+    display.printf("Max distance:%lu",
+                   (unsigned long)lastChampionProgress);
+    display.setCursor(0, 30);
+    display.printf("Previous PB:%u",
+                   lastChampionPipes);
+    display.setCursor(0, 40);
+    display.printf("Current PB:%u",
+                   bestPipesEver);
 
     for (uint8_t i = 0; i < archiveCount; i++) {
-        int16_t h = (int16_t)(archive[i].progress / 60.0f);
-        if (h > 24) h = 24;
-        display.drawFastVLine(i * 12, 58 - h, h, SSD1306_WHITE);
+        int16_t h = (int16_t)(archive[i].progress / 75.0f);
+        if (h > 9) h = 9;
+        display.drawFastVLine(i * 12, 62 - h, h, SSD1306_WHITE);
     }
 
     display.display();
@@ -775,7 +782,7 @@ void drawFpgaInference() {
     display.setTextColor(SSD1306_WHITE);
     display.setTextSize(1);
     display.setCursor(0, 0);
-    display.printf("S:%03u", fpgaScore);
+    display.printf("SCORE:%03u  Diff: %02u", fpgaScore > 999 ? 999 : fpgaScore, difficulty);
     display.drawFastHLine(0, HUD_H - 1, SCREEN_W, SSD1306_WHITE);
     drawPipes();
 
@@ -809,7 +816,11 @@ void handlePacket(uint8_t type, uint8_t value) {
         }
     } else if (type == FP_RESET) {
         difficulty = value & 0x0F;
-        resetRequested = true;
+        if (fpgaInferenceMode) {
+            resetRequested = true;
+        } else {
+            finishGenerationRequested = true;
+        }
     } else if (type == FP_MODE) {
         bool newMode = (value & 0x01) != 0;
         if (newMode && !fpgaInferenceMode) {

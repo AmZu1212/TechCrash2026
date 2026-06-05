@@ -36,6 +36,7 @@ module flappy_bird_part_3_top (
     localparam ESP_WEIGHT = 8'h10;
     localparam ESP_LOAD   = 8'h11;
     localparam ESP_STATE  = 8'h20;
+    localparam signed [19:0] NN_FLAP_THRESHOLD = 20'sd103; // logit threshold for ESP32 sigmoid > 0.55
 
     wire clk = MAX10_CLK1_50;
     wire rst_n = SW[9] & KEY[1];
@@ -331,7 +332,7 @@ module flappy_bird_part_3_top (
                 end else begin
                     infer_acc <= next_output_acc;
                     if (infer_phase == 5'd19) begin
-                        infer_flap_reg <= inference_mode && (loaded_weights == 5'd25) && (next_output_acc > 20'sd0);
+                        infer_flap_reg <= inference_mode && (loaded_weights == 5'd25) && (next_output_acc > NN_FLAP_THRESHOLD);
                         infer_done_toggle <= ~infer_done_toggle;
                         infer_busy <= 1'b0;
                     end else begin

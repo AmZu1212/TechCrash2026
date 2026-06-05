@@ -12,14 +12,15 @@ Challenge 9 Milestone 3: FPGA neural-network inference mode.
 - `SW[8]` on the FPGA selects mode:
   - `0`: ESP32 training mode
   - `1`: FPGA inference mode
-- When FPGA inference mode starts, ESP32 first runs the archived champions on a held-out deterministic course and picks the winner.
+- When FPGA inference mode starts, ESP32 first saves the current generation's best bird, then runs the archived champions on a held-out deterministic course and picks the winner.
 - ESP32 then uploads that selected brain to the FPGA as signed fixed-point weights.
 - OLED shows monochrome loading/status screens while archive evaluation and FPGA weight upload are running.
 - ESP32 then sends the live game state to the FPGA each frame.
 - FPGA runs the 4-4-1 neural network in fixed-point logic and returns flap/no-flap.
-- OLED shows either training status or the single FPGA-controlled bird with a minimal `S:###` score strip and a one-pixel separator.
+- OLED shows either training status or the single FPGA-controlled bird with a `SCORE:###  Diff: ##` score strip and a one-pixel separator.
 - `SW[3:0]` still controls difficulty.
-- `KEY[0]` resets the current training/inference run.
+- In training mode, `KEY[0]` saves the current generation's best bird and advances to the next generation.
+- In FPGA inference mode, `KEY[0]` resets/reloads the current inference run.
 - FPGA displays difficulty on `HEX1:HEX0` as `d<hex>`, mode on `HEX2`, and loaded-weight status on `HEX3` (`F` means all 25 weights loaded).
 
 ## UART Protocol
@@ -105,4 +106,5 @@ $env:USERPROFILE\.platformio\penv\Scripts\pio.exe run
 6. ESP32 uploads the selected winner's weights to FPGA.
 7. OLED switches to a single bird controlled by FPGA inference responses.
 8. Change `SW[3:0]` to alter obstacle difficulty.
-9. Press `KEY[0]` to reset the current run.
+9. In training mode, press `KEY[0]` to save a strong current bird and advance generations.
+10. In FPGA inference mode, press `KEY[0]` to reset/reload the run.
