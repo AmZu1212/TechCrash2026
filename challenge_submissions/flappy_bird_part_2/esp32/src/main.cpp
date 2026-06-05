@@ -11,7 +11,7 @@
 #include "../../../../projects/common/esp32/pin_config.h"
 
 static const uint8_t PKT_SYNC = 0xA5;
-static const uint8_t PKT_RESET = 0x01;
+static const uint8_t PKT_FINISH_GENERATION = 0x01;
 static const uint8_t PKT_DIFF = 0x02;
 
 static const uint8_t POP_SIZE = 64;
@@ -22,7 +22,7 @@ static const uint8_t ARCHIVE_SIZE = 10;
 
 static const uint32_t FRAME_MS = 33;
 static const uint32_t DRAW_MS = 250;
-static const uint8_t TRAIN_STEPS_PER_TICK = 3;
+static const uint8_t TRAIN_STEPS_PER_TICK = 10;
 static const int16_t SCREEN_W = OLED_WIDTH;
 static const int16_t SCREEN_H = OLED_HEIGHT;
 static const int16_t HUD_H = 9;
@@ -77,7 +77,7 @@ uint16_t lastChampionPipes = 0;
 uint32_t lastChampionGeneration = 0;
 uint32_t badPackets = 0;
 uint32_t packetCount = 0;
-bool resetRequested = false;
+bool finishGenerationRequested = false;
 
 float pipeX = SCREEN_W + 8;
 int16_t gapY = 32;
@@ -125,8 +125,8 @@ float sigmoid(float x) {
 }
 
 int16_t gapSizeForDifficulty() {
-    int16_t gap = 17 - (int16_t)(difficulty / 3);
-    if (gap < 12) gap = 12;
+    int16_t gap = 28 - (int16_t)difficulty;
+    if (gap < 13) gap = 13;
     return gap;
 }
 
@@ -360,9 +360,10 @@ void evolve() {
 }
 
 void updateSimulation() {
-    if (resetRequested) {
-        resetRequested = false;
-        initializeTraining();
+    if (finishGenerationRequested) {
+        finishGenerationRequested = false;
+        evolve();
+        return;
     }
 
     if (aliveCount() == 0) {
@@ -425,26 +426,28 @@ void drawTraining() {
 
     uint8_t alive = aliveCount();
     display.setCursor(0, 0);
-    display.printf("G:%lu A:%02u D:%u",
-                   (unsigned long)generation,
+    display.printf("Gen:%lu",
+                   (unsigned long)generation);
+    display.setCursor(0, 10);
+    display.printf("Alive:%02u Diff:%02u",
                    alive,
                    difficulty);
-    display.setCursor(0, 10);
-    display.printf("P:%lu %+ld",
-                   (unsigned long)lastChampionProgress,
-                   (long)championDelta);
     display.setCursor(0, 20);
-    display.printf("C:%u B:%u H:%u",
-                   lastChampionPipes,
-                   bestPipesEver,
-                   archiveCount);
+    display.printf("Max distance:%lu",
+                   (unsigned long)lastChampionProgress);
+    display.setCursor(0, 30);
+    display.printf("Previous PB:%u",
+                   lastChampionPipes);
+    display.setCursor(0, 40);
+    display.printf("Current PB:%u",
+                   bestPipesEver);
 
     int16_t barX = 0;
-    int16_t barY = 34;
+    int16_t barY = 53;
     for (uint8_t i = 0; i < archiveCount; i++) {
-        int16_t h = (int16_t)(archive[i].progress / 60.0f);
-        if (h > 24) h = 24;
-        display.drawFastVLine(barX + i * 12, barY + 24 - h, h, SSD1306_WHITE);
+        int16_t h = (int16_t)(archive[i].progress / 75.0f);
+        if (h > 9) h = 9;
+        display.drawFastVLine(barX + i * 12, barY + 9 - h, h, SSD1306_WHITE);
     }
 
     display.display();
@@ -459,9 +462,9 @@ void handlePacket(uint8_t type, uint8_t value) {
             difficulty = value;
             initializeTraining();
         }
-    } else if (type == PKT_RESET) {
+    } else if (type == PKT_FINISH_GENERATION) {
         difficulty = value;
-        resetRequested = true;
+        finishGenerationRequested = true;
     }
 }
 

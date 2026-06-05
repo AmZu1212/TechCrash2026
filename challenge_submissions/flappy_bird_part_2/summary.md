@@ -19,7 +19,7 @@ Challenge 9 Milestone 2: ESP32 neural-network training for Flappy Bird.
 - OLED displays generation, alive count, difficulty, last champion progress, progress delta, pipe score, and archive count.
 - The actual gameplay HUD contract for Parts 1 and 3 stays minimal: only score plus a one-pixel separator.
 - FPGA reads `SW[3:0]` as difficulty and sends it to ESP32 over UART.
-- FPGA reads `KEY[0]` as a training reset command.
+- FPGA reads `KEY[0]` as a finish/save-generation command.
 - FPGA displays the selected difficulty on `HEX1:HEX0` as `d<hex>`.
 
 ## UART Protocol
@@ -33,7 +33,7 @@ FPGA sends 4-byte binary packets at 9600 baud:
 Packet types:
 
 ```text
-TYPE 0x01: reset training, VALUE = current difficulty
+TYPE 0x01: finish current generation and save its best bird, VALUE = current difficulty
 TYPE 0x02: difficulty update, VALUE = SW[3:0]
 ```
 
@@ -88,4 +88,4 @@ $env:USERPROFILE\.platformio\penv\Scripts\pio.exe run
 4. Birds improve through generations by keeping the best networks and mutating them.
 5. Serial output reports the picked champion's progress and its delta from the previous generation.
 6. Change `SW[3:0]`; the FPGA display changes and training restarts for the new difficulty.
-7. Press `KEY[0]` to reset training with the current difficulty.
+7. Press `KEY[0]` to save the current generation's best bird and advance to the next generation.

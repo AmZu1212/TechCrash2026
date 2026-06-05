@@ -2,7 +2,7 @@
 //
 // FPGA -> ESP32 UART packet, 9600 8N1 on ARDUINO_IO[1]:
 //   0xA5, TYPE, VALUE, CHECKSUM
-//   TYPE 0x01 = reset training event, VALUE = current difficulty
+//   TYPE 0x01 = finish/save current generation event, VALUE = current difficulty
 //   TYPE 0x02 = difficulty update, VALUE = SW[3:0]
 //   CHECKSUM = 0xA5 ^ TYPE ^ VALUE
 
