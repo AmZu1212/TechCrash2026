@@ -1,0 +1,1 @@
+Warning (10268): Verilog HDL information at fp8_adder.v(123): always construct contains both blocking and non-blocking assignments File: C:/Users/Administrator/Desktop/Hackathon 2026/Our Fork/TechCrash2026/challenge_submissions/fp8_adder/fpga/src/fp8_adder.v Line: 123

@@ -21,7 +21,7 @@ module challenge_pll (
 );
 
     localparam integer CLK0_MULTIPLY_BY = 12;
-    localparam integer CLK0_DIVIDE_BY   = 12;   // 50 MHz — safe/confirmed timing closure
+    localparam integer CLK0_DIVIDE_BY   = 5;    // 120 MHz -- 5-stage parallel pipeline
 
     wire [5:0] pll_clk_bus;
     wire [1:0] inclk_bus;

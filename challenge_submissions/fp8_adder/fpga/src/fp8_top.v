@@ -234,15 +234,6 @@ module fp8_top (
     // ─── LEDs ───
     // Running: progress bar on LEDR[9:1], LEDR[0] kept low
     // Finished: LEDR[0] = pass/fail bit
-    //
-    // === DEBUG ADDITIONS — REMOVE WHEN ARITHMETIC CONFIRMED CORRECT ===
-    // Finished state now shows:
-    //   LEDR[0]   = 1 when ALL 4096 tests pass (unchanged)
-    //   LEDR[9:1] = fail_count[10:2] in binary (each LED = 4 failures)
-    //               All 9 lit  → ≥ 2044 failures
-    //               Only LEDR[1] → 4–7 failures
-    //               All dark   → 0–3 failures (check LEDR[0] to confirm pass)
-    // === END DEBUG ===
     reg [9:0] led_out;
     always @(*) begin
         if (running) begin
@@ -259,8 +250,7 @@ module fp8_top (
                 default: led_out = 10'b1111111110;
             endcase
         end else if (finished_sync) begin
-            led_out[0]   = (fail_count == 12'd0);   // LEDR[0]: 1 = all pass (unchanged)
-            led_out[9:1] = fail_count[10:2];         // DEBUG: fail_count/4 in 9-bit binary
+            led_out = {9'd0, fail_count == 12'd0};
         end else begin
             led_out = 10'd0;
         end
